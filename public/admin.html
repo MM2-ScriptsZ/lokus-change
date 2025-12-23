@@ -1,243 +1,202 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #121212;
-            color: #fff;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            flex-direction: column;
-        }
-        .login-container {
-            background-color: #333;
-            padding: 20px;
-            border-radius: 8px;
-            width: 300px;
-            text-align: center;
-        }
-        .login-container h1 {
-            font-size: 24px;
-            margin-bottom: 20px;
-        }
-        .input-field {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            border: 1px solid #444;
-            background-color: #222;
-            color: #fff;
-        }
-        .input-field:focus {
-            border-color: #00aaff;
-            outline: none;
-        }
-        .login-btn {
-            width: 100%;
-            padding: 10px;
-            background-color: #00aaff;
-            border: none;
-            color: white;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-        .login-btn:hover {
-            background-color: #0099cc;
-        }
-        .dashboard-container {
-            display: none;
-            background-color: #333;
-            padding: 20px;
-            border-radius: 8px;
-            width: 80%;
-            max-width: 1000px;
-            text-align: center;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            padding: 12px;
-            border: 1px solid #444;
-            text-align: center;
-        }
-        th {
-            background-color: #222;
-        }
-        tr:nth-child(even) {
-            background-color: #444;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #00aaff;
-            border: none;
-            color: white;
-            cursor: pointer;
-            border-radius: 5px;
-            margin-top: 10px;
-        }
-        button:hover {
-            background-color: #0099cc;
-        }
-        .error-message {
-            color: #ff4444;
-            margin-top: 10px;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>LOKUS CHANGE – Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+*{box-sizing:border-box;font-family:Inter,Arial,sans-serif}
+body{
+  margin:0;
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:#0b0b0b;
+  color:#fff;
+}
+.card{
+  width:420px;
+  background:#2f2f2f;
+  padding:24px;
+  border-radius:10px;
+  box-shadow:0 0 30px rgba(0,0,0,.6);
+}
+h1{margin-top:0;text-align:center}
+input,button{
+  width:100%;
+  padding:10px;
+  margin-top:10px;
+  border-radius:6px;
+  border:none;
+}
+input{background:#1e1e1e;color:#fff}
+button{background:#0aa3ff;color:#fff;font-weight:bold;cursor:pointer}
+button:hover{opacity:.9}
+.error{color:#ff5555;margin-top:10px;font-size:13px}
+.hidden{display:none}
+
+table{
+  width:100%;
+  margin-top:15px;
+  border-collapse:collapse;
+  font-size:13px;
+}
+th,td{
+  padding:8px;
+  border-bottom:1px solid #444;
+  text-align:left;
+}
+th{color:#0aa3ff}
+.action{
+  background:#444;
+  margin-right:4px;
+  padding:4px 6px;
+  font-size:12px;
+}
+.action.danger{background:#ff4444}
+.action.warn{background:#ffaa00;color:#000}
+</style>
 </head>
+
 <body>
 
-<!-- Login Form -->
-<div id="login" class="login-container">
-    <h1>Admin Login</h1>
-    <input type="password" id="adminPassword" class="input-field" placeholder="Enter Admin Password" />
-    <button class="login-btn" onclick="login()">Login</button>
-    <div id="message" class="error-message"></div>
-</div>
+<div class="card">
 
-<!-- Admin Dashboard -->
-<div id="dashboard" class="dashboard-container">
+  <!-- LOGIN -->
+  <div id="loginBox">
+    <h1>Admin Login</h1>
+    <input id="secret" type="password" placeholder="ADMIN SECRET">
+    <button onclick="login()">Login</button>
+    <div id="loginError" class="error"></div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" class="hidden">
     <h1>Admin Dashboard</h1>
-    <table id="keysTable">
-        <thead>
-            <tr>
-                <th>Key</th>
-                <th>Expiration</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Keys will be dynamically inserted here -->
-        </tbody>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Key</th>
+          <th>Expire</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="keys"></tbody>
     </table>
+
+    <button style="margin-top:15px;background:#666" onclick="logout()">Logout</button>
+  </div>
+
 </div>
 
 <script>
-    // Function to show login page
-    function showLogin() {
-        document.getElementById('login').style.display = 'block';
-        document.getElementById('dashboard').style.display = 'none';
-    }
+let adminSession = localStorage.getItem("admin_session") || null;
 
-    // Function to show dashboard
-    function showDashboard() {
-        document.getElementById('login').style.display = 'none';
-        document.getElementById('dashboard').style.display = 'block';
-        fetchKeys(); // Load keys
-    }
+if (adminSession) {
+  showDashboard();
+  loadKeys();
+}
 
-    // Login function
-    function login() {
-        const secret = document.getElementById('adminPassword').value;
-        if (!secret) {
-            document.getElementById('message').textContent = 'Please enter the admin password';
-            return;
-        }
+async function login() {
+  loginError.textContent = "";
 
-        fetch('/api/admin-login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ secret })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.message === "Login successful") {
-                showDashboard();  // Show the admin dashboard on successful login
-            } else {
-                document.getElementById('message').textContent = 'Invalid password, please try again';
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            document.getElementById('message').textContent = 'An error occurred, please try again later';
-        });
-    }
+  const res = await fetch("/api/admin-login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ secret: secret.value })
+  });
 
-    // Fetch and display keys
-    async function fetchKeys() {
-        try {
-            const response = await fetch('/api/keys');
-            const data = await response.json();
-            const keysTable = document.getElementById('keysTable').getElementsByTagName('tbody')[0];
-            keysTable.innerHTML = '';
+  const data = await res.json();
 
-            data.forEach(key => {
-                const row = keysTable.insertRow();
-                row.innerHTML = `
-                    <td>${key.key}</td>
-                    <td>${new Date(key.expire).toLocaleString()}</td>
-                    <td>${key.status}</td>
-                    <td>
-                        <button onclick="extendKey('${key.key}')">Extend</button>
-                        <button onclick="revokeKey('${key.key}')">Revoke</button>
-                    </td>
-                `;
-            });
-        } catch (error) {
-            console.error('Error fetching keys:', error);
-        }
-    }
+  if (!data.ok) {
+    loginError.textContent = "Invalid admin secret";
+    return;
+  }
 
-    // Extend key expiration by 24 hours
-    async function extendKey(key) {
-        try {
-            const response = await fetch('/api/extend-key', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ key })
-            });
+  adminSession = data.session;
+  localStorage.setItem("admin_session", adminSession);
 
-            const data = await response.json();
-            if (data.message === "Key extended") {
-                fetchKeys(); // Refresh key list
-                alert('Key extended successfully');
-            } else {
-                alert('Failed to extend key');
-            }
-        } catch (error) {
-            console.error('Error extending key:', error);
-            alert('Error extending key');
-        }
-    }
+  showDashboard();
+  loadKeys();
+}
 
-    // Revoke (delete) key
-    async function revokeKey(key) {
-        const confirmRevoke = confirm('Are you sure you want to revoke this key?');
-        if (!confirmRevoke) return;
+function showDashboard() {
+  loginBox.classList.add("hidden");
+  dashboard.classList.remove("hidden");
+}
 
-        try {
-            const response = await fetch('/api/revoke-key', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ key })
-            });
+async function loadKeys() {
+  const res = await fetch("/api/admin-list-keys", {
+    headers: { "x-admin-session": adminSession }
+  });
 
-            const data = await response.json();
-            if (data.message === "Key revoked") {
-                fetchKeys(); // Refresh key list
-                alert('Key revoked successfully');
-            } else {
-                alert('Failed to revoke key');
-            }
-        } catch (error) {
-            console.error('Error revoking key:', error);
-            alert('Error revoking key');
-        }
-    }
+  const data = await res.json();
+  const tbody = document.getElementById("keys");
+  tbody.innerHTML = "";
 
-    // Initial call to show the login form
-    showLogin();
+  Object.entries(data.keys).forEach(([key, k]) => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${key}</td>
+      <td>${new Date(k.expiresAt).toLocaleString()}</td>
+      <td>${k.banned ? "BANNED" : "ACTIVE"}</td>
+      <td>
+        <button class="action danger" onclick="banKey('${key}')">Ban</button>
+        <button class="action warn" onclick="resetHWID('${key}')">Reset HWID</button>
+        <button class="action" onclick="extend('${key}')">+24h</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function banKey(key) {
+  if (!confirm("Ban/unban this key?")) return;
+  await fetch("/api/admin-ban-key", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-admin-session": adminSession
+    },
+    body: JSON.stringify({ key })
+  });
+  loadKeys();
+}
+
+async function resetHWID(key) {
+  if (!confirm("Reset HWID for this key?")) return;
+  await fetch("/api/admin-reset-hwid", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-admin-session": adminSession
+    },
+    body: JSON.stringify({ key })
+  });
+  loadKeys();
+}
+
+async function extend(key) {
+  await fetch("/api/admin-extend-by-hwid", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-admin-session": adminSession
+    },
+    body: JSON.stringify({ hwid: "", minutes: 1440 })
+  });
+  loadKeys();
+}
+
+function logout() {
+  localStorage.removeItem("admin_session");
+  location.reload();
+}
 </script>
 
 </body>
