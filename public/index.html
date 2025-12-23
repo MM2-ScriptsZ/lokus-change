@@ -1,195 +1,199 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>LOKUS CHANGE</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <style>
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif}
 body{
-  margin:0;height:100vh;display:flex;align-items:center;justify-content:center;
-  background:radial-gradient(circle at top,#0b1530,#040712 70%);
-  color:#e8ecff;overflow:hidden
+  margin:0;height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#2b0b3f,#003a52);
+  color:#fff;
 }
-.glow{
-  position:absolute;inset:-40%;
-  background:conic-gradient(from 0deg,#00ffd0,#5865f2,#ff00ff,#00ffd0);
-  filter:blur(120px);opacity:.12;animation:spin 18s linear infinite
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-
 .card{
-  position:relative;width:390px;
-  background:rgba(10,15,35,.85);
-  border-radius:18px;padding:28px;
-  box-shadow:0 0 60px rgba(0,255,208,.15);
+  width:420px;
+  padding:30px;
+  border-radius:18px;
+  background:rgba(10,15,35,.92);
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
   text-align:center;
-  animation:enter .8s ease
 }
-@keyframes enter{from{opacity:0;transform:translateY(20px)}}
+h1{
+  margin:0;
+  color:#00ffd0;
+  letter-spacing:1px;
+}
+.sub{
+  font-size:13px;
+  opacity:.8;
+  margin:10px 0 20px;
+}
 
-h1{margin:0;color:#00ffd0;letter-spacing:1px}
-.sub{font-size:13px;opacity:.8;margin:8px 0 14px}
-
-.progress{height:8px;background:#0b1028;border-radius:8px;overflow:hidden}
-.fill{height:100%;width:0;background:linear-gradient(90deg,#00ffd0,#7a8cff);transition:.4s}
-
-.row{display:flex;gap:10px;margin-top:14px}
+.buttons{
+  display:flex;
+  gap:10px;
+  margin-bottom:15px;
+}
 button{
-  flex:1;padding:12px;border:none;border-radius:12px;
-  font-weight:700;cursor:pointer;
-  background:#111740;color:#dfe5ff;
-  transition:.25s
+  flex:1;
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  font-weight:700;
+  cursor:pointer;
+  transition:.2s;
 }
-button.primary{background:linear-gradient(135deg,#5865f2,#00ffd0);color:#050b1e}
-button.secondary{background:#1b2255}
-button:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,255,208,.2)}
-button:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
-
-.keybox{
-  display:none;margin-top:14px;
-  background:#0b1028;border-radius:12px;
-  padding:12px;font-size:13px;
-  animation:fade .5s
+.btn1{background:linear-gradient(135deg,#4c6cff,#00ffd0);color:#000}
+.btn2{background:linear-gradient(135deg,#008c9e,#00ffd0);color:#000}
+button:disabled{
+  opacity:.4;
+  cursor:not-allowed;
 }
-@keyframes fade{from{opacity:0}}
 
-.status{margin-top:10px;font-size:13px;opacity:.85}
+#getKey{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  font-weight:700;
+  background:#1e254f;
+  color:#aaa;
+  cursor:not-allowed;
+}
+
+.status{
+  margin-top:15px;
+  font-size:13px;
+  opacity:.85;
+}
 
 .toast{
-  position:fixed;bottom:20px;right:20px;
-  background:#0b1028;padding:10px 14px;
+  position:fixed;
+  bottom:20px;
+  right:20px;
+  background:#0b1028;
+  color:#fff;
+  padding:10px 14px;
   border-left:4px solid #00ffd0;
   border-radius:10px;
-  box-shadow:0 10px 40px rgba(0,0,0,.7);
-  opacity:0;transform:translateY(10px);
-  transition:.3s
+  box-shadow:0 10px 30px rgba(0,0,0,.7);
+  opacity:0;
+  transform:translateY(10px);
+  transition:.3s;
 }
-.toast.show{opacity:1;transform:none}
+.toast.show{
+  opacity:1;
+  transform:none;
+}
 </style>
 </head>
 
 <body>
-<div class="glow"></div>
 
 <div class="card">
   <h1>LOKUS CHANGE</h1>
   <div class="sub">Complete both checkpoints to unlock your key</div>
 
-  <div class="progress"><div class="fill" id="bar"></div></div>
-
-  <div class="row">
-    <button class="primary" id="cp1">Checkpoint 1</button>
-    <button class="primary" id="cp2" disabled>Checkpoint 2</button>
+  <div class="buttons">
+    <button id="cp1" class="btn1">Checkpoint 1</button>
+    <button id="cp2" class="btn2" disabled>Checkpoint 2</button>
   </div>
 
-  <button class="secondary" id="getKey" disabled style="margin-top:12px">Get Key</button>
+  <button id="getKey" disabled>Get Key</button>
 
-  <div class="keybox" id="keyBox"></div>
-  <div class="status" id="status">Waiting for checkpoints…</div>
+  <div class="status" id="status">Waiting for checkpoints...</div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-/* -------------------------
-   Session & helpers
--------------------------- */
-const qs = new URLSearchParams(location.search);
-let sessionId = qs.get("session") || Math.random().toString(36).slice(2);
-let expiresAt = 0;
-
-const bar = document.getElementById("bar");
-const statusEl = document.getElementById("status");
-const keyBox = document.getElementById("keyBox");
+/* -----------------------
+   Helpers
+------------------------ */
 const toast = document.getElementById("toast");
-
 function notify(msg){
   toast.textContent = msg;
   toast.classList.add("show");
-  setTimeout(()=>toast.classList.remove("show"), 2200);
+  setTimeout(()=>toast.classList.remove("show"),2000);
 }
-function setProg(p){ bar.style.width = p + "%"; }
 
-/* -------------------------
-   Recover progress after redirect
--------------------------- */
-async function recover(){
-  const r = await fetch(`/api/progress?session=${encodeURIComponent(sessionId)}`);
-  const d = await r.json();
-  if(d.step >= 1){
-    setProg(50);
+/* -----------------------
+   Session
+------------------------ */
+const qs = new URLSearchParams(location.search);
+let sessionId = qs.get("session") || Math.random().toString(36).slice(2);
+
+/* -----------------------
+   Elements
+------------------------ */
+const cp1 = document.getElementById("cp1");
+const cp2 = document.getElementById("cp2");
+const getKey = document.getElementById("getKey");
+const status = document.getElementById("status");
+
+/* -----------------------
+   Recover progress from backend
+------------------------ */
+async function recoverProgress(){
+  const res = await fetch(`/api/progress?session=${encodeURIComponent(sessionId)}`);
+  const data = await res.json();
+  const step = Number(data.step || 0);
+
+  if(step >= 1){
     cp2.disabled = false;
-    statusEl.textContent = "Checkpoint 1 completed";
+    status.textContent = "Checkpoint 1 completed";
   }
-  if(d.step >= 2){
-    setProg(100);
+  if(step >= 2){
     getKey.disabled = false;
-    statusEl.textContent = "All checkpoints completed";
+    getKey.style.cursor = "pointer";
+    getKey.style.color = "#fff";
+    status.textContent = "All checkpoints completed";
   }
 }
-recover();
+recoverProgress();
 
-/* -------------------------
-   CHECKPOINT BUTTONS
-   (USING redirect.html)
--------------------------- */
+/* -----------------------
+   Checkpoint buttons
+------------------------ */
 cp1.onclick = () => {
-  notify("Redirecting to Checkpoint 1…");
-  window.location.href =
-    `/redirect.html?session=${encodeURIComponent(sessionId)}&step=1&start=${Date.now()}`;
+  notify("Redirecting to Checkpoint 1...");
+  location.href = `/redirect.html?session=${encodeURIComponent(sessionId)}&step=1`;
 };
 
 cp2.onclick = () => {
-  notify("Redirecting to Checkpoint 2…");
-  window.location.href =
-    `/redirect.html?session=${encodeURIComponent(sessionId)}&step=2&start=${Date.now()}`;
+  notify("Redirecting to Checkpoint 2...");
+  location.href = `/redirect.html?session=${encodeURIComponent(sessionId)}&step=2`;
 };
 
-/* -------------------------
-   Generate Key
--------------------------- */
+/* -----------------------
+   Get Key
+------------------------ */
 getKey.onclick = async () => {
-  statusEl.textContent = "Generating key…";
+  status.textContent = "Generating key...";
   notify("Generating key");
-  const r = await fetch("/api/generate", {
+
+  const res = await fetch("/api/generate",{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
     body: JSON.stringify({ session: sessionId })
   });
-  const d = await r.json();
-  if(!d.key){
-    notify("Failed to generate key");
-    statusEl.textContent = "Complete both checkpoints first";
+
+  const data = await res.json();
+  if(!data.key){
+    status.textContent = "Complete checkpoints first";
+    notify("Failed");
     return;
   }
-  expiresAt = d.expiresAt;
-  keyBox.style.display = "block";
-  keyBox.innerHTML = `
-    <b>KEY</b><br>${d.key}<br>
-    <button class="secondary" onclick="navigator.clipboard.writeText('${d.key}');notify('Key copied')">Copy</button>
-  `;
-  startTimer();
-};
 
-/* -------------------------
-   Expiration countdown
--------------------------- */
-function startTimer(){
-  const t = setInterval(()=>{
-    const diff = expiresAt - Date.now();
-    if(diff <= 0){
-      statusEl.textContent = "Key expired";
-      clearInterval(t);
-      return;
-    }
-    const h = Math.floor(diff/3600000);
-    const m = Math.floor(diff%3600000/60000);
-    const s = Math.floor(diff%60000/1000);
-    statusEl.textContent = `Expires in ${h}h ${m}m ${s}s`;
-  }, 1000);
-}
+  status.textContent = "Key generated successfully";
+  notify("Key generated");
+
+  alert("YOUR KEY:\n\n" + data.key);
+};
 </script>
+
 </body>
 </html>
