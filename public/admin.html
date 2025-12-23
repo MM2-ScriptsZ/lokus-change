@@ -1,159 +1,180 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>LOKUS CHANGE – Admin</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<style>
-*{box-sizing:border-box;font-family:Inter,Arial,sans-serif}
-body{
-  margin:0;background:radial-gradient(circle at top,#0b1530,#040712);
-  color:#e8ecff
-}
-.wrap{
-  max-width:1100px;margin:30px auto;padding:26px;
-  background:rgba(10,15,35,.92);
-  border-radius:18px;
-  box-shadow:0 0 60px rgba(0,255,208,.15);
-  animation:enter .8s
-}
-@keyframes enter{from{opacity:0;transform:translateY(20px)}}
-
-h1{margin:0 0 14px;color:#00ffd0}
-.row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
-input,select,button{
-  padding:10px;border-radius:10px;border:none;
-  background:#0b1028;color:#e8ecff
-}
-button{cursor:pointer;font-weight:700;transition:.2s}
-button.primary{background:linear-gradient(135deg,#5865f2,#00ffd0);color:#050b1e}
-button.warn{background:#ff9f43}
-button.danger{background:#ff4d4d}
-button.small{padding:6px 10px;font-size:12px}
-button:hover{transform:translateY(-2px)}
-
-table{width:100%;border-collapse:collapse;margin-top:10px}
-th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px}
-th{color:#9ad9ff}
-tr:hover{background:rgba(255,255,255,.04)}
-.bad{color:#ff7a7a}.ok{color:#7affa1}.mid{color:#ffaa7a}
-
-.toast{
-  position:fixed;bottom:20px;right:20px;
-  background:#0b1028;padding:10px 14px;
-  border-left:4px solid #00ffd0;
-  border-radius:10px;
-  box-shadow:0 10px 40px rgba(0,0,0,.7);
-  opacity:0;transform:translateY(10px);transition:.3s
-}
-.toast.show{opacity:1;transform:none}
-.hidden{display:none}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #fff;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .dashboard-container {
+            background-color: #333;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 1000px;
+            text-align: center;
+            overflow: auto;
+        }
+        .dashboard-container h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #444;
+            text-align: center;
+        }
+        th {
+            background-color: #222;
+        }
+        tr:nth-child(even) {
+            background-color: #444;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #00aaff;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0099cc;
+        }
+        .error-message {
+            color: #ff4444;
+            margin-top: 10px;
+        }
+        .success-message {
+            color: #28a745;
+            margin-top: 10px;
+        }
+    </style>
 </head>
-
 <body>
-<div class="wrap">
-  <div id="login">
-    <h1>Admin Login</h1>
-    <div class="row">
-      <input id="secret" type="password" placeholder="ADMIN_SECRET">
-      <button class="primary" onclick="login()">Login</button>
-    </div>
-  </div>
-
-  <div id="dash" class="hidden">
-    <h1>Admin Dashboard</h1>
-    <div class="row">
-      <input id="q" placeholder="Search key / HWID">
-      <select id="sort">
-        <option value="new">Newest</option>
-        <option value="exp">Expiration</option>
-        <option value="ban">Banned</option>
-      </select>
-      <button onclick="load()">Refresh</button>
-      <button onclick="logout()">Logout</button>
+    <div class="dashboard-container">
+        <h1>Admin Dashboard</h1>
+        <div id="message"></div>
+        <table id="keysTable">
+            <thead>
+                <tr>
+                    <th>Key</th>
+                    <th>Expiration</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Keys will be dynamically inserted here -->
+            </tbody>
+        </table>
     </div>
 
-    <table>
-      <thead>
-        <tr><th>Key</th><th>HWIDs</th><th>Expires</th><th>Status</th><th>Actions</th></tr>
-      </thead>
-      <tbody id="tb"></tbody>
-    </table>
-  </div>
-</div>
+    <script>
+        // Fetch keys and display them
+        async function fetchKeys() {
+            try {
+                const response = await fetch('/api/keys');
+                const data = await response.json();
 
-<div class="toast" id="toast"></div>
+                if (data.length === 0) {
+                    document.getElementById('keysTable').innerHTML = "<tr><td colspan='4'>No keys available</td></tr>";
+                    return;
+                }
 
-<script>
-let session=localStorage.getItem("admin_session"),all=[];
-const toast=document.getElementById("toast");
-function notify(m){toast.textContent=m;toast.classList.add("show");setTimeout(()=>toast.classList.remove("show"),2400)}
+                const keysTable = document.getElementById('keysTable').getElementsByTagName('tbody')[0];
+                keysTable.innerHTML = '';
 
-if(session)showDash();
-function showDash(){login.classList.add("hidden");dash.classList.remove("hidden");load()}
+                data.forEach(key => {
+                    const row = keysTable.insertRow();
+                    row.innerHTML = `
+                        <td>${key.key}</td>
+                        <td>${new Date(key.expire).toLocaleString()}</td>
+                        <td>${key.status}</td>
+                        <td>
+                            <button onclick="extendKey('${key.key}')">Extend</button>
+                            <button onclick="revokeKey('${key.key}')">Revoke</button>
+                        </td>
+                    `;
+                });
+            } catch (error) {
+                console.error('Error fetching keys:', error);
+            }
+        }
 
-async function login(){
-  notify("Logging in");
-  const r=await fetch("/api/admin-login",{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({secret:secret.value})});
-  const d=await r.json();
-  if(!d.ok){notify("Invalid secret");return}
-  session=d.session;localStorage.setItem("admin_session",session);showDash();
-}
-async function logout(){
-  await fetch("/api/admin-logout",{method:"POST",headers:{"x-admin-session":session}});
-  localStorage.removeItem("admin_session");location.reload();
-}
-async function load(){
-  const r=await fetch("/api/admin-list-keys",{headers:{"x-admin-session":session}});
-  const d=await r.json();all=d.keys||[];render();
-}
-function render(){
-  let rows=[...all],s=q.value.toLowerCase();
-  rows=rows.filter(k=>k.key.toLowerCase().includes(s)||(k.hwids||[]).some(h=>h.toLowerCase().includes(s)));
-  if(sort.value==="exp")rows.sort((a,b)=>(a.expiresAt||0)-(b.expiresAt||0));
-  if(sort.value==="ban")rows.sort((a,b)=>(b.banned===true)-(a.banned===true));
-  if(sort.value==="new")rows.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-  tb.innerHTML=rows.map(k=>`
-    <tr>
-      <td>${k.key}</td>
-      <td>${(k.hwids||[]).length}</td>
-      <td>${fmt(k.expiresAt)}</td>
-      <td class="${k.banned?'bad':(k.expiresAt<Date.now()?'mid':'ok')}">
-        ${k.banned?'BANNED':(k.expiresAt<Date.now()?'EXPIRED':'ACTIVE')}
-      </td>
-      <td>
-        <button class="small danger" onclick="ban('${k.key}')">${k.banned?'Unban':'Ban'}</button>
-        <button class="small warn" onclick="resetHWID('${k.key}')">Reset HWID</button>
-        <button class="small" onclick="extend()">Extend</button>
-      </td>
-    </tr>`).join("");
-}
-function fmt(t){
-  if(!t)return"-";if(t<Date.now())return"Expired";
-  const d=t-Date.now(),h=Math.floor(d/3600000),m=Math.floor(d%3600000/60000);
-  return`${h}h ${m}m`;
-}
-async function ban(key){
-  if(!confirm(`Toggle ban for:\n${key}`))return;
-  await fetch("/api/admin-ban-key",{method:"POST",headers:{"Content-Type":"application/json","x-admin-session":session},
-    body:JSON.stringify({key})});notify("Updated");load();
-}
-async function resetHWID(key){
-  if(!confirm(`Reset all HWIDs for:\n${key}`))return;
-  await fetch("/api/admin-reset-hwid",{method:"POST",headers:{"Content-Type":"application/json","x-admin-session":session},
-    body:JSON.stringify({key})});notify("HWIDs reset");load();
-}
-async function extend(){
-  const hwid=prompt("HWID:"); if(!hwid)return;
-  const mins=prompt("Minutes or 'lifetime':"); if(!mins)return;
-  if(!confirm(`Extend ${mins} for HWID:\n${hwid}`))return;
-  await fetch("/api/admin-extend-by-hwid",{method:"POST",headers:{"Content-Type":"application/json","x-admin-session":session},
-    body:JSON.stringify({hwid,minutes:mins})});notify("Extended");load();
-}
-q.oninput=render;sort.onchange=render;
-</script>
+        // Extend key expiration by 24 hours
+        async function extendKey(key) {
+            try {
+                const response = await fetch('/api/extend-key', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key })
+                });
+
+                const data = await response.json();
+                if (data.message === "Key extended") {
+                    fetchKeys(); // Refresh key list
+                    showMessage('Key extended successfully', 'success');
+                } else {
+                    showMessage('Failed to extend key', 'error');
+                }
+            } catch (error) {
+                console.error('Error extending key:', error);
+                showMessage('Error extending key', 'error');
+            }
+        }
+
+        // Revoke (delete) key
+        async function revokeKey(key) {
+            const confirmRevoke = confirm('Are you sure you want to revoke this key?');
+            if (!confirmRevoke) return;
+
+            try {
+                const response = await fetch('/api/revoke-key', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key })
+                });
+
+                const data = await response.json();
+                if (data.message === "Key revoked") {
+                    fetchKeys(); // Refresh key list
+                    showMessage('Key revoked successfully', 'success');
+                } else {
+                    showMessage('Failed to revoke key', 'error');
+                }
+            } catch (error) {
+                console.error('Error revoking key:', error);
+                showMessage('Error revoking key', 'error');
+            }
+        }
+
+        // Display success or error message
+        function showMessage(message, type) {
+            const messageElement = document.getElementById('message');
+            messageElement.textContent = message;
+            messageElement.className = type === 'success' ? 'success-message' : 'error-message';
+        }
+
+        // Load keys when the page loads
+        window.onload = fetchKeys;
+
+    </script>
 </body>
 </html>
