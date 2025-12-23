@@ -1,0 +1,5 @@
+// api/keys.js
+export default function handler(req, res) {
+  const keys = getKeysFromDatabase(); // Replace with your DB query logic
+  res.status(200).json(keys);
+}
