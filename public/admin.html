@@ -13,21 +13,53 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            flex-direction: column;
             height: 100vh;
+            flex-direction: column;
+        }
+        .login-container {
+            background-color: #333;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+            text-align: center;
+        }
+        .login-container h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .input-field {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #444;
+            background-color: #222;
+            color: #fff;
+        }
+        .input-field:focus {
+            border-color: #00aaff;
+            outline: none;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #00aaff;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .login-btn:hover {
+            background-color: #0099cc;
         }
         .dashboard-container {
+            display: none;
             background-color: #333;
             padding: 20px;
             border-radius: 8px;
             width: 80%;
             max-width: 1000px;
             text-align: center;
-            overflow: auto;
-        }
-        .dashboard-container h1 {
-            font-size: 24px;
-            margin-bottom: 20px;
         }
         table {
             width: 100%;
@@ -61,120 +93,152 @@
             color: #ff4444;
             margin-top: 10px;
         }
-        .success-message {
-            color: #28a745;
-            margin-top: 10px;
-        }
     </style>
 </head>
 <body>
-    <div class="dashboard-container">
-        <h1>Admin Dashboard</h1>
-        <div id="message"></div>
-        <table id="keysTable">
-            <thead>
-                <tr>
-                    <th>Key</th>
-                    <th>Expiration</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Keys will be dynamically inserted here -->
-            </tbody>
-        </table>
-    </div>
 
-    <script>
-        // Fetch keys and display them
-        async function fetchKeys() {
-            try {
-                const response = await fetch('/api/keys');
-                const data = await response.json();
+<!-- Login Form -->
+<div id="login" class="login-container">
+    <h1>Admin Login</h1>
+    <input type="password" id="adminPassword" class="input-field" placeholder="Enter Admin Password" />
+    <button class="login-btn" onclick="login()">Login</button>
+    <div id="message" class="error-message"></div>
+</div>
 
-                if (data.length === 0) {
-                    document.getElementById('keysTable').innerHTML = "<tr><td colspan='4'>No keys available</td></tr>";
-                    return;
-                }
+<!-- Admin Dashboard -->
+<div id="dashboard" class="dashboard-container">
+    <h1>Admin Dashboard</h1>
+    <table id="keysTable">
+        <thead>
+            <tr>
+                <th>Key</th>
+                <th>Expiration</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Keys will be dynamically inserted here -->
+        </tbody>
+    </table>
+</div>
 
-                const keysTable = document.getElementById('keysTable').getElementsByTagName('tbody')[0];
-                keysTable.innerHTML = '';
+<script>
+    // Function to show login page
+    function showLogin() {
+        document.getElementById('login').style.display = 'block';
+        document.getElementById('dashboard').style.display = 'none';
+    }
 
-                data.forEach(key => {
-                    const row = keysTable.insertRow();
-                    row.innerHTML = `
-                        <td>${key.key}</td>
-                        <td>${new Date(key.expire).toLocaleString()}</td>
-                        <td>${key.status}</td>
-                        <td>
-                            <button onclick="extendKey('${key.key}')">Extend</button>
-                            <button onclick="revokeKey('${key.key}')">Revoke</button>
-                        </td>
-                    `;
-                });
-            } catch (error) {
-                console.error('Error fetching keys:', error);
+    // Function to show dashboard
+    function showDashboard() {
+        document.getElementById('login').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        fetchKeys(); // Load keys
+    }
+
+    // Login function
+    function login() {
+        const secret = document.getElementById('adminPassword').value;
+        if (!secret) {
+            document.getElementById('message').textContent = 'Please enter the admin password';
+            return;
+        }
+
+        fetch('/api/admin-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ secret })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message === "Login successful") {
+                showDashboard();  // Show the admin dashboard on successful login
+            } else {
+                document.getElementById('message').textContent = 'Invalid password, please try again';
             }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('message').textContent = 'An error occurred, please try again later';
+        });
+    }
+
+    // Fetch and display keys
+    async function fetchKeys() {
+        try {
+            const response = await fetch('/api/keys');
+            const data = await response.json();
+            const keysTable = document.getElementById('keysTable').getElementsByTagName('tbody')[0];
+            keysTable.innerHTML = '';
+
+            data.forEach(key => {
+                const row = keysTable.insertRow();
+                row.innerHTML = `
+                    <td>${key.key}</td>
+                    <td>${new Date(key.expire).toLocaleString()}</td>
+                    <td>${key.status}</td>
+                    <td>
+                        <button onclick="extendKey('${key.key}')">Extend</button>
+                        <button onclick="revokeKey('${key.key}')">Revoke</button>
+                    </td>
+                `;
+            });
+        } catch (error) {
+            console.error('Error fetching keys:', error);
         }
+    }
 
-        // Extend key expiration by 24 hours
-        async function extendKey(key) {
-            try {
-                const response = await fetch('/api/extend-key', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ key })
-                });
+    // Extend key expiration by 24 hours
+    async function extendKey(key) {
+        try {
+            const response = await fetch('/api/extend-key', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key })
+            });
 
-                const data = await response.json();
-                if (data.message === "Key extended") {
-                    fetchKeys(); // Refresh key list
-                    showMessage('Key extended successfully', 'success');
-                } else {
-                    showMessage('Failed to extend key', 'error');
-                }
-            } catch (error) {
-                console.error('Error extending key:', error);
-                showMessage('Error extending key', 'error');
+            const data = await response.json();
+            if (data.message === "Key extended") {
+                fetchKeys(); // Refresh key list
+                alert('Key extended successfully');
+            } else {
+                alert('Failed to extend key');
             }
+        } catch (error) {
+            console.error('Error extending key:', error);
+            alert('Error extending key');
         }
+    }
 
-        // Revoke (delete) key
-        async function revokeKey(key) {
-            const confirmRevoke = confirm('Are you sure you want to revoke this key?');
-            if (!confirmRevoke) return;
+    // Revoke (delete) key
+    async function revokeKey(key) {
+        const confirmRevoke = confirm('Are you sure you want to revoke this key?');
+        if (!confirmRevoke) return;
 
-            try {
-                const response = await fetch('/api/revoke-key', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ key })
-                });
+        try {
+            const response = await fetch('/api/revoke-key', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key })
+            });
 
-                const data = await response.json();
-                if (data.message === "Key revoked") {
-                    fetchKeys(); // Refresh key list
-                    showMessage('Key revoked successfully', 'success');
-                } else {
-                    showMessage('Failed to revoke key', 'error');
-                }
-            } catch (error) {
-                console.error('Error revoking key:', error);
-                showMessage('Error revoking key', 'error');
+            const data = await response.json();
+            if (data.message === "Key revoked") {
+                fetchKeys(); // Refresh key list
+                alert('Key revoked successfully');
+            } else {
+                alert('Failed to revoke key');
             }
+        } catch (error) {
+            console.error('Error revoking key:', error);
+            alert('Error revoking key');
         }
+    }
 
-        // Display success or error message
-        function showMessage(message, type) {
-            const messageElement = document.getElementById('message');
-            messageElement.textContent = message;
-            messageElement.className = type === 'success' ? 'success-message' : 'error-message';
-        }
+    // Initial call to show the login form
+    showLogin();
+</script>
 
-        // Load keys when the page loads
-        window.onload = fetchKeys;
-
-    </script>
 </body>
 </html>
