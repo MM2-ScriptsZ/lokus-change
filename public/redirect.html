@@ -15,14 +15,17 @@ if (!session) {
   location.href = "/";
 }
 
-// Force return to backend
+// FORCE Linkvertise to return HERE with session
 const callback =
-  encodeURIComponent(`${location.origin}/api/linkvertise?session=${session}`);
+  encodeURIComponent(
+    `${location.origin}/api/linkvertise?session=${session}`
+  );
 
-// Your Linkvertise link
+// YOUR LINKVERTISE LINK
 const LINKVERTISE =
   "https://linkvertise.com/1446949/vQHP7oIi77Tz?o=sharing";
 
+// THIS IS THE IMPORTANT PART
 location.href = `${LINKVERTISE}&r=${callback}`;
 </script>
 </body>
