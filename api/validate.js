@@ -1,18 +1,15 @@
-import { readDB, writeDB } from "./_db.js";
+import { redis } from "./_redis.js";
 
-export default function handler(req, res) {
-  const { key, hwid } = req.body || {};
-  const db = readDB();
+export default async function handler(req, res) {
+  let body = "";
+  for await (const chunk of req) body += chunk;
+  const { key, hwid } = JSON.parse(body || {});
 
-  const data = db.keys[key];
-  if (!data || data.banned) return res.json({ ok: false });
-  if (Date.now() > data.expiresAt) return res.json({ ok: false });
+  const data = await redis.hgetall(`key:${key}`);
+  if (!data) return res.json({ ok: false });
+  if (data.banned === "true") return res.json({ ok: false, reason: "banned" });
+  if (Date.now() > Number(data.expiresAt)) return res.json({ ok: false, reason: "expired" });
 
-  if (!data.hwids.includes(hwid)) {
-    if (data.hwids.length >= 3) return res.json({ ok: false });
-    data.hwids.push(hwid);
-  }
-
-  writeDB(db);
+  await redis.set(`hwid:${hwid}`, key);
   res.json({ ok: true });
 }
