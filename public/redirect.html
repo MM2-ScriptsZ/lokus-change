@@ -16,18 +16,18 @@ if (!session || !step) {
   location.href = "/";
 }
 
-// 🔴 IMPORTANT: build FINAL return URL yourself
-const returnUrl =
+// 🔴 FORCE return URL
+const callback =
   encodeURIComponent(
     `${location.origin}/api/linkvertise?session=${session}&step=${step}`
   );
 
-// 🔴 YOUR LINKVERTISE LINK
-const linkvertise =
+// 🔴 PUT YOUR link-target URL HERE
+const LINK_TARGET =
   "https://link-target.net/1446949/vQHP7oIi77Tz";
 
-// 🚨 FORCE redirect back with params preserved
-location.href = `${linkvertise}?r=${returnUrl}`;
+// 🔒 Force return even if link-target strips params
+location.href = `${LINK_TARGET}?r=${callback}`;
 </script>
 </body>
 </html>
