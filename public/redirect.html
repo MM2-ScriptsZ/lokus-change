@@ -1,29 +1,33 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Redirecting…</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <title>Redirecting…</title>
 </head>
 <body>
-<p>Redirecting, please wait…</p>
+<p>Redirecting…</p>
 
 <script>
 const params = new URLSearchParams(location.search);
 const session = params.get("session");
 const step = params.get("step");
 
-// ❌ If missing params → abort
 if (!session || !step) {
   location.href = "/";
 }
 
-// 🔴 YOUR REAL LINKVERTISE / LINK-TARGET URL
-const LINKVERTISE_URL = "https://link-target.net/1446949/vQHP7oIi77Tz";
+// 🔴 IMPORTANT: build FINAL return URL yourself
+const returnUrl =
+  encodeURIComponent(
+    `${location.origin}/api/linkvertise?session=${session}&step=${step}`
+  );
 
-// Forward user to Linkvertise with params preserved
-location.href =
-  `${LINKVERTISE_URL}?session=${encodeURIComponent(session)}&step=${encodeURIComponent(step)}`;
+// 🔴 YOUR LINKVERTISE LINK
+const linkvertise =
+  "https://link-target.net/1446949/vQHP7oIi77Tz";
+
+// 🚨 FORCE redirect back with params preserved
+location.href = `${linkvertise}?r=${returnUrl}`;
 </script>
 </body>
 </html>
