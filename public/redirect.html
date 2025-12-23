@@ -1,35 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
   <title>Redirecting…</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-<p>Redirecting, please wait…</p>
+<p>Redirecting…</p>
 
 <script>
-const params = new URLSearchParams(window.location.search);
+const params = new URLSearchParams(location.search);
 const session = params.get("session");
-const step = params.get("step");
 
-if (!session || !step) {
-  // Safety fallback
-  window.location.href = "/";
-  throw new Error("Missing session or step");
+if (!session) {
+  location.href = "/";
 }
 
-// 🔴 FORCE BACKEND CALLBACK (DO NOT CHANGE)
-const callbackUrl = encodeURIComponent(
-  `${window.location.origin}/api/linkvertise?session=${session}&step=${step}`
-);
+// Force return to backend
+const callback =
+  encodeURIComponent(`${location.origin}/api/linkvertise?session=${session}`);
 
-// 🔴 YOUR EXACT LINKVERTISE LINK (CONFIRMED)
-const LINKVERTISE_URL =
+// Your Linkvertise link
+const LINKVERTISE =
   "https://linkvertise.com/1446949/vQHP7oIi77Tz?o=sharing";
 
-// 🔒 FINAL REDIRECT (THIS IS THE IMPORTANT PART)
-window.location.href = `${LINKVERTISE_URL}&r=${callbackUrl}`;
+location.href = `${LINKVERTISE}&r=${callback}`;
 </script>
 </body>
 </html>
