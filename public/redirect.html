@@ -3,32 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <title>Redirecting…</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
 <p>Redirecting, please wait…</p>
 
 <script>
-const params = new URLSearchParams(location.search);
+const params = new URLSearchParams(window.location.search);
 const session = params.get("session");
 const step = params.get("step");
 
 if (!session || !step) {
   // Safety fallback
-  location.href = "/";
+  window.location.href = "/";
+  throw new Error("Missing session or step");
 }
 
-// 🔴 FORCE Linkvertise to return here WITH params
-const returnUrl =
-  encodeURIComponent(
-    `${location.origin}/api/linkvertise?session=${session}&step=${step}`
-  );
+// 🔴 FORCE BACKEND CALLBACK (DO NOT CHANGE)
+const callbackUrl = encodeURIComponent(
+  `${window.location.origin}/api/linkvertise?session=${session}&step=${step}`
+);
 
-// 🔴 YOUR LINKVERTISE LINK (DO NOT CHANGE)
-const LINKVERTISE =
+// 🔴 YOUR EXACT LINKVERTISE LINK (CONFIRMED)
+const LINKVERTISE_URL =
   "https://linkvertise.com/1446949/vQHP7oIi77Tz?o=sharing";
 
-// 🔒 Redirect with forced return
-location.href = `${LINKVERTISE}&r=${returnUrl}`;
+// 🔒 FINAL REDIRECT (THIS IS THE IMPORTANT PART)
+window.location.href = `${LINKVERTISE_URL}&r=${callbackUrl}`;
 </script>
 </body>
 </html>
