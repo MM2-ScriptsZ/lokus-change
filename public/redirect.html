@@ -4,73 +4,26 @@
 <meta charset="UTF-8">
 <title>Redirecting…</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
-<style>
-body{
-  margin:0;height:100vh;
-  display:flex;align-items:center;justify-content:center;
-  background:#050812;color:#e8ecff;
-  font-family:Inter,Arial,sans-serif;
-}
-.box{
-  text-align:center;
-  background:rgba(10,15,35,.9);
-  padding:30px;
-  border-radius:16px;
-  box-shadow:0 0 40px rgba(0,255,208,.2);
-}
-.spin{
-  width:38px;height:38px;
-  border:4px solid #1b2255;
-  border-top-color:#00ffd0;
-  border-radius:50%;
-  margin:16px auto;
-  animation:spin 1s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-.small{font-size:13px;opacity:.8}
-</style>
 </head>
-
 <body>
-
-<div class="box">
-  <h2>🔐 LOKUS CHANGE</h2>
-  <div class="spin"></div>
-  <div class="small">Redirecting to checkpoint…</div>
-</div>
+<p>Redirecting, please wait…</p>
 
 <script>
-/*
-  REQUIRED URL FORMAT:
-  /redirect.html?step=1&session=ABC123
-*/
-
 const params = new URLSearchParams(location.search);
-
 const session = params.get("session");
 const step = params.get("step");
-const start = params.get("start") || Date.now();
 
-// ⚠️ PUT YOUR REAL LINK-TARGET / LINKVERTISE URL HERE
-const LINKTARGET_URL = "https://link-target.net/1446949/vQHP7oIi77Tz";
-
+// ❌ If missing params → abort
 if (!session || !step) {
-  document.body.innerHTML =
-    "<h3 style='color:red'>Invalid redirect parameters</h3>";
-} else {
-  const finalURL =
-    LINKTARGET_URL +
-    "?session=" + encodeURIComponent(session) +
-    "&step=" + encodeURIComponent(step) +
-    "&start=" + encodeURIComponent(start);
-
-  // short delay so user sees loading (prevents instant bypass)
-  setTimeout(() => {
-    window.location.href = finalURL;
-  }, 800);
+  location.href = "/";
 }
-</script>
 
+// 🔴 YOUR REAL LINKVERTISE / LINK-TARGET URL
+const LINKVERTISE_URL = "https://link-target.net/1446949/vQHP7oIi77Tz";
+
+// Forward user to Linkvertise with params preserved
+location.href =
+  `${LINKVERTISE_URL}?session=${encodeURIComponent(session)}&step=${encodeURIComponent(step)}`;
+</script>
 </body>
 </html>
