@@ -4,24 +4,22 @@ export default async function handler(req, res) {
   try {
     const { session, step, hash } = req.query;
 
-    // CASE 1: Linkvertise hash-only redirect
-    if (hash && !session) {
-      // Just send user back safely
+    // Case 1: Linkvertise hash-only redirect (NO progress)
+    if (hash && (!session || !step)) {
       return res.redirect("/");
     }
 
-    // CASE 2: Proper checkpoint redirect
+    // Case 2: Missing required params
     if (!session || !step) {
-      return res.status(400).send("Invalid checkpoint callback");
+      return res.status(400).send("Invalid Linkvertise callback");
     }
 
-    // Save progress
-    await redis.set(`progress:${session}`, step, { ex: 600 });
+    // Case 3: Valid checkpoint
+    await redis.set(`progress:${session}`, String(step), { ex: 600 });
 
-    // Redirect user back to homepage with session
     return res.redirect(`/?session=${session}`);
-
   } catch (err) {
+    console.error("Linkvertise error:", err);
     return res.status(500).send("Server error");
   }
 }
