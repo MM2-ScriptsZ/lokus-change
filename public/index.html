@@ -6,87 +6,98 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <style>
-*{box-sizing:border-box;font-family:Inter,Arial,sans-serif}
-body{
-  margin:0;height:100vh;
-  display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(135deg,#2b0b3f,#003a52);
-  color:#fff;
-}
-.card{
-  width:420px;
-  padding:30px;
-  border-radius:18px;
-  background:rgba(10,15,35,.92);
-  box-shadow:0 20px 60px rgba(0,0,0,.6);
-  text-align:center;
-}
-h1{
-  margin:0;
-  color:#00ffd0;
-  letter-spacing:1px;
-}
-.sub{
-  font-size:13px;
-  opacity:.8;
-  margin:10px 0 20px;
+* {
+  box-sizing: border-box;
+  font-family: Inter, Arial, sans-serif;
 }
 
-.buttons{
-  display:flex;
-  gap:10px;
-  margin-bottom:15px;
-}
-button{
-  flex:1;
-  padding:12px;
-  border:none;
-  border-radius:12px;
-  font-weight:700;
-  cursor:pointer;
-  transition:.2s;
-}
-.btn1{background:linear-gradient(135deg,#4c6cff,#00ffd0);color:#000}
-.btn2{background:linear-gradient(135deg,#008c9e,#00ffd0);color:#000}
-button:disabled{
-  opacity:.4;
-  cursor:not-allowed;
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #3a0f52, #003a52);
+  color: #fff;
 }
 
-#getKey{
-  width:100%;
-  padding:12px;
-  border:none;
-  border-radius:12px;
-  font-weight:700;
-  background:#1e254f;
-  color:#aaa;
-  cursor:not-allowed;
+.card {
+  width: 420px;
+  padding: 28px;
+  border-radius: 18px;
+  background: rgba(10, 15, 35, 0.92);
+  box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  text-align: center;
 }
 
-.status{
-  margin-top:15px;
-  font-size:13px;
-  opacity:.85;
+h1 {
+  margin: 0;
+  color: #00ffd0;
+  letter-spacing: 1px;
 }
 
-.toast{
-  position:fixed;
-  bottom:20px;
-  right:20px;
-  background:#0b1028;
-  color:#fff;
-  padding:10px 14px;
-  border-left:4px solid #00ffd0;
-  border-radius:10px;
-  box-shadow:0 10px 30px rgba(0,0,0,.7);
-  opacity:0;
-  transform:translateY(10px);
-  transition:.3s;
+.sub {
+  font-size: 13px;
+  opacity: 0.85;
+  margin: 10px 0 20px;
 }
-.toast.show{
-  opacity:1;
-  transform:none;
+
+button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+#checkpoint {
+  background: linear-gradient(135deg, #4c6cff, #00ffd0);
+  color: #000;
+}
+
+#checkpoint:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#getKey {
+  margin-top: 12px;
+  background: #1e254f;
+  color: #aaa;
+  cursor: not-allowed;
+}
+
+#getKey.enabled {
+  color: #fff;
+  cursor: pointer;
+}
+
+.status {
+  margin-top: 15px;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #0b1028;
+  color: #fff;
+  padding: 10px 14px;
+  border-left: 4px solid #00ffd0;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.7);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: 0.3s;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: none;
 }
 </style>
 </head>
@@ -95,102 +106,92 @@ button:disabled{
 
 <div class="card">
   <h1>LOKUS CHANGE</h1>
-  <div class="sub">Complete both checkpoints to unlock your key</div>
+  <div class="sub">Complete the checkpoint to unlock your key</div>
 
-  <div class="buttons">
-    <button id="cp1" class="btn1">Checkpoint 1</button>
-    <button id="cp2" class="btn2" disabled>Checkpoint 2</button>
-  </div>
-
+  <button id="checkpoint">Complete Checkpoint</button>
   <button id="getKey" disabled>Get Key</button>
 
-  <div class="status" id="status">Waiting for checkpoints...</div>
+  <div class="status" id="status">Waiting for checkpoint…</div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-/* -----------------------
-   Helpers
------------------------- */
+/* -----------------------------
+   Toast helper
+------------------------------ */
 const toast = document.getElementById("toast");
-function notify(msg){
+function notify(msg) {
   toast.textContent = msg;
   toast.classList.add("show");
-  setTimeout(()=>toast.classList.remove("show"),2000);
+  setTimeout(() => toast.classList.remove("show"), 2000);
 }
 
-/* -----------------------
-   Session
------------------------- */
+/* -----------------------------
+   Session handling
+------------------------------ */
 const qs = new URLSearchParams(location.search);
 let sessionId = qs.get("session") || Math.random().toString(36).slice(2);
 
-/* -----------------------
+/* -----------------------------
    Elements
------------------------- */
-const cp1 = document.getElementById("cp1");
-const cp2 = document.getElementById("cp2");
-const getKey = document.getElementById("getKey");
-const status = document.getElementById("status");
+------------------------------ */
+const checkpointBtn = document.getElementById("checkpoint");
+const getKeyBtn = document.getElementById("getKey");
+const statusText = document.getElementById("status");
 
-/* -----------------------
+/* -----------------------------
    Recover progress from backend
------------------------- */
-async function recoverProgress(){
-  const res = await fetch(`/api/progress?session=${encodeURIComponent(sessionId)}`);
-  const data = await res.json();
-  const step = Number(data.step || 0);
+------------------------------ */
+async function recoverProgress() {
+  try {
+    const res = await fetch(`/api/progress?session=${encodeURIComponent(sessionId)}`);
+    const data = await res.json();
 
-  if(step >= 1){
-    cp2.disabled = false;
-    status.textContent = "Checkpoint 1 completed";
-  }
-  if(step >= 2){
-    getKey.disabled = false;
-    getKey.style.cursor = "pointer";
-    getKey.style.color = "#fff";
-    status.textContent = "All checkpoints completed";
+    if (Number(data.step) === 1) {
+      checkpointBtn.disabled = true;
+      getKeyBtn.disabled = false;
+      getKeyBtn.classList.add("enabled");
+      statusText.textContent = "Checkpoint completed. You can now get your key.";
+    }
+  } catch (e) {
+    console.error(e);
   }
 }
+
 recoverProgress();
 
-/* -----------------------
-   Checkpoint buttons
------------------------- */
-cp1.onclick = () => {
-  notify("Redirecting to Checkpoint 1...");
-  location.href = `/redirect.html?session=${encodeURIComponent(sessionId)}&step=1`;
+/* -----------------------------
+   Checkpoint click
+------------------------------ */
+checkpointBtn.onclick = () => {
+  notify("Redirecting to checkpoint...");
+  location.href = `/redirect.html?session=${encodeURIComponent(sessionId)}`;
 };
 
-cp2.onclick = () => {
-  notify("Redirecting to Checkpoint 2...");
-  location.href = `/redirect.html?session=${encodeURIComponent(sessionId)}&step=2`;
-};
+/* -----------------------------
+   Generate key
+------------------------------ */
+getKeyBtn.onclick = async () => {
+  if (getKeyBtn.disabled) return;
 
-/* -----------------------
-   Get Key
------------------------- */
-getKey.onclick = async () => {
-  status.textContent = "Generating key...";
-  notify("Generating key");
+  notify("Generating key...");
+  statusText.textContent = "Generating key...";
 
-  const res = await fetch("/api/generate",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
+  const res = await fetch("/api/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ session: sessionId })
   });
 
   const data = await res.json();
-  if(!data.key){
-    status.textContent = "Complete checkpoints first";
-    notify("Failed");
+
+  if (!data.key) {
+    statusText.textContent = "Checkpoint not completed.";
     return;
   }
 
-  status.textContent = "Key generated successfully";
-  notify("Key generated");
-
+  statusText.textContent = "Key generated successfully!";
   alert("YOUR KEY:\n\n" + data.key);
 };
 </script>
