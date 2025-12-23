@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Redirecting…</title>
 </head>
 <body>
-<p>Redirecting…</p>
+<p>Redirecting, please wait…</p>
 
 <script>
 const params = new URLSearchParams(location.search);
@@ -13,21 +13,22 @@ const session = params.get("session");
 const step = params.get("step");
 
 if (!session || !step) {
+  // Safety fallback
   location.href = "/";
 }
 
-// 🔴 FORCE return URL
-const callback =
+// 🔴 FORCE Linkvertise to return here WITH params
+const returnUrl =
   encodeURIComponent(
     `${location.origin}/api/linkvertise?session=${session}&step=${step}`
   );
 
-// 🔴 PUT YOUR link-target URL HERE
-const LINK_TARGET =
-  "https://link-target.net/1446949/vQHP7oIi77Tz";
+// 🔴 YOUR LINKVERTISE LINK (DO NOT CHANGE)
+const LINKVERTISE =
+  "https://linkvertise.com/1446949/vQHP7oIi77Tz?o=sharing";
 
-// 🔒 Force return even if link-target strips params
-location.href = `${LINK_TARGET}?r=${callback}`;
+// 🔒 Redirect with forced return
+location.href = `${LINKVERTISE}&r=${returnUrl}`;
 </script>
 </body>
 </html>
