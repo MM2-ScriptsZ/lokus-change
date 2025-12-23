@@ -1,8 +1,10 @@
-import { readDB, writeDB } from "./_db.js";
+import { redis } from "./_redis.js";
 
-export default function handler(req, res) {
-  const db = readDB();
-  db.keys[req.body.key].hwids = [];
-  writeDB(db);
+export default async function handler(req, res) {
+  let body = "";
+  for await (const chunk of req) body += chunk;
+  const { key } = JSON.parse(body || {});
+
+  await redis.del(`hwids:${key}`);
   res.json({ ok: true });
 }
