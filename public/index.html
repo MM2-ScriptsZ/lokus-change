@@ -125,16 +125,24 @@ function notify(msg) {
   setTimeout(() => toast.classList.remove("show"), 2000);
 }
 
-/* Session */
-const qs = new URLSearchParams(location.search);
-let sessionId = qs.get("session") || Math.random().toString(36).slice(2);
+/* -----------------------------
+   SESSION (FIXED)
+------------------------------ */
+let sessionId = localStorage.getItem("lokus_session");
+
+if (!sessionId) {
+  sessionId = Math.random().toString(36).slice(2);
+  localStorage.setItem("lokus_session", sessionId);
+}
 
 /* Elements */
 const checkpointBtn = document.getElementById("checkpoint");
 const getKeyBtn = document.getElementById("getKey");
 const statusText = document.getElementById("status");
 
-/* Recover progress from backend */
+/* -----------------------------
+   Recover progress from backend
+------------------------------ */
 async function recoverProgress() {
   try {
     const res = await fetch(`/api/progress?session=${encodeURIComponent(sessionId)}`);
@@ -145,6 +153,8 @@ async function recoverProgress() {
       getKeyBtn.disabled = false;
       getKeyBtn.classList.add("enabled");
       statusText.textContent = "Checkpoint completed. You can now get your key.";
+    } else {
+      statusText.textContent = "Waiting for checkpoint…";
     }
   } catch (e) {
     console.error(e);
@@ -153,14 +163,18 @@ async function recoverProgress() {
 
 recoverProgress();
 
-/* Checkpoint click */
-checkpointBtn.onclick = () => {
+/* -----------------------------
+   Checkpoint click (FIXED)
+------------------------------ */
+checkpointBtn.addEventListener("click", () => {
   notify("Redirecting to checkpoint...");
-  location.href = `/redirect.html?session=${encodeURIComponent(sessionId)}`;
-};
+  window.location.href = `/redirect.html?session=${encodeURIComponent(sessionId)}`;
+});
 
-/* Get key */
-getKeyBtn.onclick = async () => {
+/* -----------------------------
+   Get key
+------------------------------ */
+getKeyBtn.addEventListener("click", async () => {
   if (getKeyBtn.disabled) return;
 
   notify("Generating key...");
@@ -181,8 +195,5 @@ getKeyBtn.onclick = async () => {
 
   statusText.textContent = "Key generated successfully!";
   alert("YOUR KEY:\n\n" + data.key);
-};
+});
 </script>
-
-</body>
-</html>
