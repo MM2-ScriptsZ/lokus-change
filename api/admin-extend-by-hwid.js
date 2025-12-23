@@ -1,13 +1,15 @@
-import { readDB, writeDB } from "./_db.js";
+import { redis } from "./_redis.js";
 
-export default function handler(req, res) {
-  const db = readDB();
-  for (const k in db.keys) {
-    if (db.keys[k].hwids.includes(req.body.hwid)) {
-      db.keys[k].expiresAt += Number(req.body.minutes) * 60000;
-      writeDB(db);
-      return res.json({ ok: true });
-    }
-  }
-  res.json({ ok: false });
+export default async function handler(req, res) {
+  let body = "";
+  for await (const chunk of req) body += chunk;
+  const { hwid, minutes } = JSON.parse(body || {});
+
+  const key = await redis.get(`hwid:${hwid}`);
+  if (!key) return res.json({ ok: false });
+
+  const add = minutes === "lifetime" ? 315360000000 : minutes * 60000;
+  await redis.hincrby(`key:${key}`, "expiresAt", add);
+
+  res.json({ ok: true });
 }
