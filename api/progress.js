@@ -1,7 +1,7 @@
-import { readDB } from "./_db.js";
+import { redis } from "./_redis.js";
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   const { session } = req.query;
-  const db = readDB();
-  res.json({ step: db.linkvertise[session] || 0 });
+  const step = await redis.get(`progress:${session}`);
+  res.json({ step: Number(step || 0) });
 }
