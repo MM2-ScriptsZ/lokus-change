@@ -2,200 +2,288 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>LOKUS CHANGE – Admin</title>
+<title>LOKUS CHANGE • Admin</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif}
 body{
   margin:0;
-  height:100vh;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  background:#0b0b0b;
+  background:radial-gradient(circle at top,#2d1457,#090b1d);
   color:#fff;
 }
-.card{
-  width:420px;
-  background:#2f2f2f;
-  padding:24px;
-  border-radius:10px;
-  box-shadow:0 0 30px rgba(0,0,0,.6);
+.container{
+  max-width:1200px;
+  margin:50px auto;
+  padding:30px;
+  background:rgba(12,15,40,.95);
+  border-radius:18px;
+  box-shadow:0 0 60px rgba(0,255,208,.15);
+  animation:fadeIn .5s ease;
 }
-h1{margin-top:0;text-align:center}
-input,button{
-  width:100%;
-  padding:10px;
-  margin-top:10px;
-  border-radius:6px;
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(15px)}
+}
+h1{
+  margin:0 0 10px;
+  color:#00ffd0;
+  letter-spacing:1px;
+}
+.sub{
+  font-size:13px;
+  opacity:.8;
+}
+.login{
+  max-width:360px;
+  margin:80px auto;
+  text-align:center;
+}
+input{
+  padding:12px;
   border:none;
+  border-radius:12px;
+  background:#1b224a;
+  color:#fff;
 }
-input{background:#1e1e1e;color:#fff}
-button{background:#0aa3ff;color:#fff;font-weight:bold;cursor:pointer}
-button:hover{opacity:.9}
-.error{color:#ff5555;margin-top:10px;font-size:13px}
-.hidden{display:none}
-
+input::placeholder{opacity:.6}
+button{
+  padding:10px 16px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:700;
+  transition:.2s;
+}
+.primary{
+  background:linear-gradient(135deg,#5865f2,#00ffd0);
+  color:#000;
+}
+.primary:hover{transform:translateY(-2px)}
+.logout{
+  float:right;
+  background:#1b224a;
+  color:#fff;
+}
+.controls{
+  display:flex;
+  gap:12px;
+  margin-top:20px;
+}
+.controls input{
+  flex:1;
+}
+.table-wrap{
+  overflow-x:auto;
+  margin-top:25px;
+}
 table{
   width:100%;
-  margin-top:15px;
   border-collapse:collapse;
-  font-size:13px;
 }
 th,td{
-  padding:8px;
-  border-bottom:1px solid #444;
+  padding:14px;
+  border-bottom:1px solid rgba(255,255,255,.1);
   text-align:left;
+  font-size:14px;
 }
-th{color:#0aa3ff}
-.action{
-  background:#444;
-  margin-right:4px;
-  padding:4px 6px;
+th{
+  color:#00ffd0;
+  font-weight:600;
+}
+tr:hover{
+  background:rgba(255,255,255,.03);
+}
+.badge{
+  padding:4px 10px;
+  border-radius:8px;
+  font-size:12px;
+  font-weight:700;
+  display:inline-block;
+}
+.active{background:#1f7a4a;color:#9affd6}
+.banned{background:#7a1f1f;color:#ff9a9a}
+.expired{background:#5a5a5a;color:#eee}
+.actions button{
+  margin-right:6px;
   font-size:12px;
 }
-.action.danger{background:#ff4444}
-.action.warn{background:#ffaa00;color:#000}
+.warn{background:#ffb347;color:#000}
+.danger{background:#ff5555;color:#fff}
+.footer{
+  margin-top:30px;
+  font-size:12px;
+  opacity:.5;
+  text-align:center;
+}
 </style>
 </head>
 
 <body>
 
-<div class="card">
+<!-- LOGIN -->
+<div id="loginBox" class="login">
+  <h1>Admin Login</h1>
+  <div class="sub">LOKUS CHANGE Control Panel</div>
+  <input id="secret" type="password" placeholder="ADMIN SECRET" style="width:100%;margin-top:15px">
+  <button class="primary" style="width:100%;margin-top:15px" onclick="login()">Login</button>
+</div>
 
-  <!-- LOGIN -->
-  <div id="loginBox">
-    <h1>Admin Login</h1>
-    <input id="secret" type="password" placeholder="ADMIN SECRET">
-    <button onclick="login()">Login</button>
-    <div id="loginError" class="error"></div>
+<!-- DASHBOARD -->
+<div id="dash" class="container" style="display:none">
+  <button class="logout" onclick="logout()">Logout</button>
+  <h1>Admin Dashboard</h1>
+  <div class="sub">Manage keys, HWIDs, bans and expiration</div>
+
+  <!-- SEARCH -->
+  <div class="controls">
+    <input id="search" placeholder="Search by key or HWID..." oninput="render()">
   </div>
 
-  <!-- DASHBOARD -->
-  <div id="dashboard" class="hidden">
-    <h1>Admin Dashboard</h1>
-
+  <div class="table-wrap">
     <table>
       <thead>
         <tr>
           <th>Key</th>
-          <th>Expire</th>
+          <th>HWID</th>
+          <th>Expiration</th>
           <th>Status</th>
           <th>Actions</th>
         </tr>
       </thead>
-      <tbody id="keys"></tbody>
+      <tbody id="tbody"></tbody>
     </table>
-
-    <button style="margin-top:15px;background:#666" onclick="logout()">Logout</button>
   </div>
 
+  <div class="footer">LOKUS CHANGE • Admin Panel</div>
 </div>
 
 <script>
-let adminSession = localStorage.getItem("admin_session") || null;
+let adminSession=null;
+let allKeys=[];
 
-if (adminSession) {
-  showDashboard();
-  loadKeys();
-}
-
-async function login() {
-  loginError.textContent = "";
-
-  const res = await fetch("/api/admin-login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ secret: secret.value })
+async function login(){
+  const r=await fetch("/api/admin-login",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ secret:secret.value })
   });
-
-  const data = await res.json();
-
-  if (!data.ok) {
-    loginError.textContent = "Invalid admin secret";
-    return;
-  }
-
-  adminSession = data.session;
-  localStorage.setItem("admin_session", adminSession);
-
-  showDashboard();
-  loadKeys();
+  const d=await r.json();
+  if(!d.ok) return alert("Invalid admin secret");
+  adminSession=d.session;
+  localStorage.setItem("admin_session",adminSession);
+  showDash();
 }
 
-function showDashboard() {
-  loginBox.classList.add("hidden");
-  dashboard.classList.remove("hidden");
-}
-
-async function loadKeys() {
-  const res = await fetch("/api/admin-list-keys", {
-    headers: { "x-admin-session": adminSession }
-  });
-
-  const data = await res.json();
-  const tbody = document.getElementById("keys");
-  tbody.innerHTML = "";
-
-  Object.entries(data.keys).forEach(([key, k]) => {
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = `
-      <td>${key}</td>
-      <td>${new Date(k.expiresAt).toLocaleString()}</td>
-      <td>${k.banned ? "BANNED" : "ACTIVE"}</td>
-      <td>
-        <button class="action danger" onclick="banKey('${key}')">Ban</button>
-        <button class="action warn" onclick="resetHWID('${key}')">Reset HWID</button>
-        <button class="action" onclick="extend('${key}')">+24h</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-async function banKey(key) {
-  if (!confirm("Ban/unban this key?")) return;
-  await fetch("/api/admin-ban-key", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-admin-session": adminSession
-    },
-    body: JSON.stringify({ key })
-  });
-  loadKeys();
-}
-
-async function resetHWID(key) {
-  if (!confirm("Reset HWID for this key?")) return;
-  await fetch("/api/admin-reset-hwid", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-admin-session": adminSession
-    },
-    body: JSON.stringify({ key })
-  });
-  loadKeys();
-}
-
-async function extend(key) {
-  await fetch("/api/admin-extend-by-hwid", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-admin-session": adminSession
-    },
-    body: JSON.stringify({ hwid: "", minutes: 1440 })
-  });
-  loadKeys();
-}
-
-function logout() {
+function logout(){
   localStorage.removeItem("admin_session");
   location.reload();
+}
+
+function showDash(){
+  loginBox.style.display="none";
+  dash.style.display="block";
+  loadKeys();
+}
+
+async function loadKeys(){
+  const r=await fetch("/api/admin-list-keys",{
+    headers:{ "x-admin-session":adminSession }
+  });
+  const d=await r.json();
+  allKeys=d.keys;
+  render();
+}
+
+function formatExpiry(ts){
+  if(!ts) return "Never";
+  const diff=ts-Date.now();
+  if(diff<=0) return "Expired";
+  const m=Math.floor(diff/60000);
+  const h=Math.floor(m/60);
+  const d=Math.floor(h/24);
+  if(d>0) return `${d}d ${h%24}h`;
+  if(h>0) return `${h}h ${m%60}m`;
+  return `${m}m`;
+}
+
+function render(){
+  const q=search.value.toLowerCase();
+  const body=document.getElementById("tbody");
+  body.innerHTML="";
+
+  allKeys
+    .filter(k =>
+      k.key.toLowerCase().includes(q) ||
+      (k.hwid||"").toLowerCase().includes(q)
+    )
+    .forEach(k=>{
+      const expired=k.expiresAt && Date.now()>Number(k.expiresAt);
+      body.innerHTML+=`
+      <tr>
+        <td>${k.key}</td>
+        <td>${k.hwid||"UNBOUND"}</td>
+        <td>${formatExpiry(Number(k.expiresAt))}</td>
+        <td>
+          <span class="badge ${
+            expired ? "expired" : k.banned ? "banned" : "active"
+          }">
+            ${expired ? "EXPIRED" : k.banned ? "BANNED" : "ACTIVE"}
+          </span>
+        </td>
+        <td class="actions">
+          <button class="warn" onclick="ban('${k.key}',${!k.banned})">
+            ${k.banned?"Unban":"Ban"}
+          </button>
+          <button onclick="resetHWID('${k.key}')">Reset HWID</button>
+          <button class="danger" onclick="revoke('${k.key}')">Delete</button>
+        </td>
+      </tr>`;
+    });
+}
+
+async function ban(key,ban){
+  await fetch("/api/admin-ban-key",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "x-admin-session":adminSession
+    },
+    body:JSON.stringify({ key, ban })
+  });
+  loadKeys();
+}
+
+async function resetHWID(key){
+  if(!confirm("Reset HWID for this key?")) return;
+  await fetch("/api/admin-reset-hwid",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "x-admin-session":adminSession
+    },
+    body:JSON.stringify({ key })
+  });
+  loadKeys();
+}
+
+async function revoke(key){
+  if(!confirm("Delete this key permanently?")) return;
+  await fetch("/api/admin-revoke-key",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "x-admin-session":adminSession
+    },
+    body:JSON.stringify({ key })
+  });
+  loadKeys();
+}
+
+/* Auto-login */
+const saved=localStorage.getItem("admin_session");
+if(saved){
+  adminSession=saved;
+  showDash();
 }
 </script>
 
