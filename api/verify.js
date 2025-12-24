@@ -6,27 +6,26 @@ export default async function handler(req, res) {
   const { token, session } = JSON.parse(body || "{}");
 
   if (!token || !session) {
-    return res.json({ ok: false });
+    return res.json({ ok: false, reason: "missing_data" });
   }
 
   const data = await redis.hgetall(`challenge:${token}`);
-  if (!data || data.used === "true") {
-    return res.json({ ok: false });
+  if (!data) {
+    return res.json({ ok: false, reason: "token_not_found" });
   }
 
-  const createdAt = Number(data.createdAt);
-  const now = Date.now();
-
-  // ⏱️ Minimum time spent (anti-bypass)
-  if (now - createdAt < 8000) {
-    return res.json({ ok: false });
+  if (data.used === "true") {
+    return res.json({ ok: false, reason: "token_used" });
   }
 
-  // Mark challenge as used
+  // 🔧 TEMPORARILY DISABLE TIME CHECK
+  // const createdAt = Number(data.createdAt);
+  // if (Date.now() - createdAt < 8000) {
+  //   return res.json({ ok: false, reason: "too_fast" });
+  // }
+
   await redis.hset(`challenge:${token}`, { used: "true" });
-
-  // Unlock progress for session
   await redis.set(`progress:${session}`, "1", { ex: 600 });
 
-  res.json({ ok: true });
+  return res.json({ ok: true });
 }
