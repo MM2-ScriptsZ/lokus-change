@@ -2,14 +2,20 @@ import { redis } from "./_redis.js";
 
 export default async function handler(req, res) {
   let body = "";
-  for await (const chunk of req) body += chunk;
-  const { hwid, minutes } = JSON.parse(body || {});
+  for await (const c of req) body += c;
+  const { key, hours } = JSON.parse(body || "{}");
 
-  const key = await redis.get(`hwid:${hwid}`);
-  if (!key) return res.json({ ok: false });
+  const data = await redis.hgetall(`key:${key}`);
+  if (!data || !data.expiresAt) {
+    return res.json({ ok: false });
+  }
 
-  const add = minutes === "lifetime" ? 315360000000 : minutes * 60000;
-  await redis.hincrby(`key:${key}`, "expiresAt", add);
+  const extra = (hours || 24) * 60 * 60 * 1000;
+  const newExpire = Number(data.expiresAt) + extra;
 
-  res.json({ ok: true });
+  await redis.hset(`key:${key}`, {
+    expiresAt: newExpire.toString()
+  });
+
+  res.json({ ok: true, expiresAt: newExpire });
 }
