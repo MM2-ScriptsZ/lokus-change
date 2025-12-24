@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>LOKUS CHANGE</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 * {
@@ -15,8 +15,8 @@ body {
   margin: 0;
   height: 100vh;
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   background: linear-gradient(135deg, #3a0f52, #003a52);
   color: #fff;
 }
@@ -49,21 +49,21 @@ button {
   border-radius: 12px;
   font-weight: 700;
   cursor: pointer;
+  margin-top: 10px;
   transition: 0.2s;
 }
 
-#checkpoint {
+#start {
   background: linear-gradient(135deg, #4c6cff, #00ffd0);
   color: #000;
 }
 
-#checkpoint:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+#verify {
+  background: #2a335f;
+  color: #fff;
 }
 
 #getKey {
-  margin-top: 12px;
   background: #1e254f;
   color: #aaa;
   cursor: not-allowed;
@@ -79,26 +79,6 @@ button {
   font-size: 13px;
   opacity: 0.85;
 }
-
-.toast {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: #0b1028;
-  color: #fff;
-  padding: 10px 14px;
-  border-left: 4px solid #00ffd0;
-  border-radius: 10px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.7);
-  opacity: 0;
-  transform: translateY(10px);
-  transition: 0.3s;
-}
-
-.toast.show {
-  opacity: 1;
-  transform: none;
-}
 </style>
 </head>
 
@@ -108,31 +88,18 @@ button {
   <h1>LOKUS CHANGE</h1>
   <div class="sub">Complete the checkpoint to unlock your key</div>
 
-  <button id="checkpoint">Complete Checkpoint</button>
+  <button id="start">Start Checkpoint</button>
+  <button id="verify" disabled>Verify Completion</button>
   <button id="getKey" disabled>Get Key</button>
 
-  <div class="status" id="status">Waiting for checkpoint…</div>
+  <div class="status" id="status">Waiting…</div>
 </div>
-
-<div class="toast" id="toast"></div>
 
 <script>
 /* ---------------------------
-   Toast
----------------------------- */
-const toast = document.getElementById("toast");
-function notify(msg) {
-  toast.textContent = msg;
-  toast.classList.add("show");
-  setTimeout(() => toast.classList.remove("show"), 2000);
-}
-
-/* ---------------------------
-   SESSION (FIXED)
-   THIS WAS THE ROOT CAUSE
+   SESSION (PERSISTENT)
 ---------------------------- */
 let sessionId = localStorage.getItem("lokus_session");
-
 if (!sessionId) {
   sessionId = Math.random().toString(36).slice(2);
   localStorage.setItem("lokus_session", sessionId);
@@ -141,12 +108,15 @@ if (!sessionId) {
 /* ---------------------------
    Elements
 ---------------------------- */
-const checkpointBtn = document.getElementById("checkpoint");
+const startBtn = document.getElementById("start");
+const verifyBtn = document.getElementById("verify");
 const getKeyBtn = document.getElementById("getKey");
 const statusText = document.getElementById("status");
 
+let challengeToken = null;
+
 /* ---------------------------
-   Recover progress (SERVER)
+   Recover progress from backend
 ---------------------------- */
 async function recoverProgress() {
   try {
@@ -154,34 +124,83 @@ async function recoverProgress() {
     const data = await res.json();
 
     if (Number(data.step) === 1) {
-      checkpointBtn.disabled = true;
+      startBtn.disabled = true;
+      verifyBtn.disabled = true;
       getKeyBtn.disabled = false;
       getKeyBtn.classList.add("enabled");
       statusText.textContent = "Checkpoint completed. You can now get your key.";
     }
-  } catch (err) {
-    console.error(err);
+  } catch (e) {
+    console.error(e);
   }
 }
 
 recoverProgress();
 
 /* ---------------------------
-   Checkpoint click
+   Start Checkpoint
 ---------------------------- */
-checkpointBtn.addEventListener("click", () => {
-  notify("Redirecting to checkpoint...");
-  window.location.href = `/redirect.html?session=${encodeURIComponent(sessionId)}`;
-});
+startBtn.onclick = async () => {
+  statusText.textContent = "Preparing checkpoint…";
+
+  const res = await fetch("/api/challenge");
+  const data = await res.json();
+
+  challengeToken = data.token;
+  localStorage.setItem("challenge_token", challengeToken);
+
+  verifyBtn.disabled = false;
+  statusText.textContent = "Complete the task, then click Verify";
+
+  // Open ad in new tab (no params needed)
+  window.open(
+    "https://linkvertise.com/1446949/vQHP7oIi77Tz?o=sharing",
+    "_blank"
+  );
+};
+
+/* ---------------------------
+   Verify Completion
+---------------------------- */
+verifyBtn.onclick = async () => {
+  statusText.textContent = "Verifying…";
+
+  const token = localStorage.getItem("challenge_token");
+  if (!token) {
+    statusText.textContent = "No challenge token found.";
+    return;
+  }
+
+  const res = await fetch("/api/verify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      token,
+      session: sessionId
+    })
+  });
+
+  const data = await res.json();
+
+  if (!data.ok) {
+    statusText.textContent = "Verification failed. Try again.";
+    return;
+  }
+
+  statusText.textContent = "Checkpoint completed!";
+  startBtn.disabled = true;
+  verifyBtn.disabled = true;
+  getKeyBtn.disabled = false;
+  getKeyBtn.classList.add("enabled");
+};
 
 /* ---------------------------
    Get Key
 ---------------------------- */
-getKeyBtn.addEventListener("click", async () => {
+getKeyBtn.onclick = async () => {
   if (getKeyBtn.disabled) return;
 
-  notify("Generating key...");
-  statusText.textContent = "Generating key...";
+  statusText.textContent = "Generating key…";
 
   const res = await fetch("/api/generate", {
     method: "POST",
@@ -198,7 +217,7 @@ getKeyBtn.addEventListener("click", async () => {
 
   statusText.textContent = "Key generated successfully!";
   alert("YOUR KEY:\n\n" + data.key);
-});
+};
 </script>
 
 </body>
