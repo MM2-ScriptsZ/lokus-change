@@ -6,78 +6,94 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-* {
-  box-sizing: border-box;
-  font-family: Inter, Arial, sans-serif;
+*{box-sizing:border-box;font-family:Inter,Arial,sans-serif}
+body{
+  margin:0;
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:radial-gradient(circle at top,#2d1457,#090b1d);
+  color:#fff;
 }
-
-body {
-  margin: 0;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: linear-gradient(135deg, #3a0f52, #003a52);
-  color: #fff;
+.card{
+  width:420px;
+  padding:28px;
+  border-radius:18px;
+  background:rgba(12,15,40,.95);
+  box-shadow:0 0 60px rgba(0,255,208,.18);
+  text-align:center;
+  animation:fadeIn .5s ease;
 }
-
-.card {
-  width: 420px;
-  padding: 28px;
-  border-radius: 18px;
-  background: rgba(10, 15, 35, 0.92);
-  box-shadow: 0 20px 60px rgba(0,0,0,.6);
-  text-align: center;
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(20px)}
 }
-
-h1 {
-  margin: 0;
-  color: #00ffd0;
-  letter-spacing: 1px;
+h1{
+  margin:0;
+  color:#00ffd0;
+  letter-spacing:1px;
 }
-
-.sub {
-  font-size: 13px;
-  opacity: 0.85;
-  margin: 10px 0 20px;
+.sub{
+  font-size:13px;
+  opacity:.8;
+  margin:10px 0 20px;
 }
-
-button {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  margin-top: 10px;
-  transition: 0.2s;
+button{
+  width:100%;
+  padding:13px;
+  margin-top:10px;
+  border:none;
+  border-radius:14px;
+  font-weight:700;
+  cursor:pointer;
+  transition:.25s;
 }
-
-#start {
-  background: linear-gradient(135deg, #4c6cff, #00ffd0);
-  color: #000;
+button:disabled{
+  opacity:.4;
+  cursor:not-allowed;
 }
-
-#verify {
-  background: #2a335f;
-  color: #fff;
+#start{
+  background:linear-gradient(135deg,#5865f2,#00ffd0);
+  color:#000;
 }
-
-#getKey {
-  background: #1e254f;
-  color: #aaa;
-  cursor: not-allowed;
+#verify{
+  background:#2a335f;
+  color:#fff;
 }
-
-#getKey.enabled {
-  color: #fff;
-  cursor: pointer;
+#getKey{
+  background:#1b224a;
+  color:#aaa;
 }
-
-.status {
-  margin-top: 15px;
-  font-size: 13px;
-  opacity: 0.85;
+#getKey.enabled{
+  color:#fff;
+  background:linear-gradient(135deg,#00ffd0,#3cffb3);
+}
+button:hover:not(:disabled){
+  transform:translateY(-2px);
+  box-shadow:0 10px 30px rgba(0,255,208,.25);
+}
+.status{
+  margin-top:15px;
+  font-size:13px;
+  opacity:.9;
+}
+.toast{
+  position:fixed;
+  bottom:20px;
+  right:20px;
+  background:#0b1028;
+  color:#fff;
+  padding:10px 14px;
+  border-left:4px solid #00ffd0;
+  border-radius:10px;
+  box-shadow:0 10px 30px rgba(0,0,0,.7);
+  opacity:0;
+  transform:translateY(10px);
+  transition:.3s;
+}
+.toast.show{
+  opacity:1;
+  transform:none;
 }
 </style>
 </head>
@@ -95,19 +111,35 @@ button {
   <div class="status" id="status">Waiting…</div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-/* ---------------------------
-   SESSION (PERSISTENT)
----------------------------- */
+/* ---------------- TOAST ---------------- */
+const toast = document.getElementById("toast");
+function notify(msg){
+  toast.textContent = msg;
+  toast.classList.add("show");
+  setTimeout(()=>toast.classList.remove("show"),2000);
+}
+
+/* ---------------- SESSION ---------------- */
 let sessionId = localStorage.getItem("lokus_session");
-if (!sessionId) {
+if(!sessionId){
   sessionId = Math.random().toString(36).slice(2);
   localStorage.setItem("lokus_session", sessionId);
 }
 
-/* ---------------------------
-   Elements
----------------------------- */
+/* ---------------- HWID ---------------- */
+function getHWID(){
+  return btoa(
+    navigator.userAgent +
+    screen.width +
+    screen.height +
+    navigator.language
+  );
+}
+
+/* ---------------- ELEMENTS ---------------- */
 const startBtn = document.getElementById("start");
 const verifyBtn = document.getElementById("verify");
 const getKeyBtn = document.getElementById("getKey");
@@ -115,59 +147,48 @@ const statusText = document.getElementById("status");
 
 let challengeToken = null;
 
-/* ---------------------------
-   Recover progress from backend
----------------------------- */
-async function recoverProgress() {
-  try {
-    const res = await fetch(`/api/progress?session=${encodeURIComponent(sessionId)}`);
-    const data = await res.json();
-
-    if (Number(data.step) === 1) {
-      startBtn.disabled = true;
-      verifyBtn.disabled = true;
-      getKeyBtn.disabled = false;
-      getKeyBtn.classList.add("enabled");
-      statusText.textContent = "Checkpoint completed. You can now get your key.";
-    }
-  } catch (e) {
-    console.error(e);
+/* ---------------- RECOVER PROGRESS ---------------- */
+async function recoverProgress(){
+  const r = await fetch(`/api/progress?session=${encodeURIComponent(sessionId)}`);
+  const d = await r.json();
+  if(Number(d.step) === 1){
+    startBtn.disabled = true;
+    verifyBtn.disabled = true;
+    getKeyBtn.disabled = false;
+    getKeyBtn.classList.add("enabled");
+    statusText.textContent = "Checkpoint completed. You can now get your key.";
   }
 }
-
 recoverProgress();
 
-/* ---------------------------
-   Start Checkpoint
----------------------------- */
+/* ---------------- START CHECKPOINT ---------------- */
 startBtn.onclick = async () => {
+  notify("Opening checkpoint");
   statusText.textContent = "Preparing checkpoint…";
 
-  const res = await fetch("/api/challenge");
-  const data = await res.json();
+  const r = await fetch("/api/challenge");
+  const d = await r.json();
 
-  challengeToken = data.token;
+  challengeToken = d.token;
   localStorage.setItem("challenge_token", challengeToken);
 
   verifyBtn.disabled = false;
   statusText.textContent = "Complete the task, then click Verify";
 
-  // Open ad in new tab (no params needed)
   window.open(
     "https://linkvertise.com/1446949/vQHP7oIi77Tz?o=sharing",
     "_blank"
   );
 };
 
-/* ---------------------------
-   Verify Completion
----------------------------- */
+/* ---------------- VERIFY (FIXED) ---------------- */
 verifyBtn.onclick = async () => {
+  notify("Verifying");
   statusText.textContent = "Verifying…";
 
   const token = localStorage.getItem("challenge_token");
-  if (!token) {
-    statusText.textContent = "No challenge token found.";
+  if(!token){
+    statusText.textContent = "No challenge token. Click Start again.";
     return;
   }
 
@@ -175,18 +196,21 @@ verifyBtn.onclick = async () => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      token,
-      session: sessionId
+      token: token,
+      session: sessionId,
+      hwid: getHWID()
     })
   });
 
   const data = await res.json();
+  console.log("Verify response:", data);
 
-  if (!data.ok) {
-    statusText.textContent = "Verification failed. Try again.";
+  if(!data.ok){
+    statusText.textContent = "Checkpoint not completed.";
     return;
   }
 
+  notify("Checkpoint completed");
   statusText.textContent = "Checkpoint completed!";
   startBtn.disabled = true;
   verifyBtn.disabled = true;
@@ -194,29 +218,25 @@ verifyBtn.onclick = async () => {
   getKeyBtn.classList.add("enabled");
 };
 
-/* ---------------------------
-   Get Key
----------------------------- */
+/* ---------------- GET KEY ---------------- */
 getKeyBtn.onclick = async () => {
-  if (getKeyBtn.disabled) return;
+  if(getKeyBtn.disabled) return;
 
+  notify("Generating key");
   statusText.textContent = "Generating key…";
 
-  const res = await fetch("/api/generate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ session: sessionId })
+  const r = await fetch("/api/generate",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ session: sessionId })
   });
 
-  const data = await res.json();
-
-  if (!data.key) {
-    statusText.textContent = "Checkpoint not completed.";
-    return;
+  const d = await r.json();
+  if(d.key){
+    alert("YOUR KEY:\n\n" + d.key);
+  } else {
+    statusText.textContent = "Failed to generate key.";
   }
-
-  statusText.textContent = "Key generated successfully!";
-  alert("YOUR KEY:\n\n" + data.key);
 };
 </script>
 
