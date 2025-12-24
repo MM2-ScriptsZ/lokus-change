@@ -1,19 +1,24 @@
 import { redis } from "./_redis.js";
 
 export default async function handler(req, res) {
-  const session = req.headers["x-admin-session"];
-  if (!session) return res.status(401).end();
-
-  const ok = await redis.get(`admin:session:${session}`);
-  if (!ok) return res.status(401).end();
-
-  const keys = {};
-  const list = await redis.keys("key:*");
-
-  for (const k of list) {
-    const data = await redis.hgetall(k);
-    keys[k.replace("key:", "")] = data;
+  const admin = req.headers["x-admin-session"];
+  if (!admin || !(await redis.get(`admin:${admin}`))) {
+    return res.status(401).end();
   }
 
-  res.json({ keys });
+  const keys = await redis.keys("key:*");
+  const result = [];
+
+  for (const k of keys) {
+    const key = k.replace("key:", "");
+    const data = await redis.hgetall(k);
+    result.push({
+      key,
+      hwid: data.hwid || "UNBOUND",
+      banned: data.banned === "true",
+      createdAt: data.createdAt || ""
+    });
+  }
+
+  res.json({ keys: result });
 }
