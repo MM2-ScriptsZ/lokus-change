@@ -12,11 +12,13 @@ export default async function handler(req, res) {
   for (const k of keys) {
     const key = k.replace("key:", "");
     const data = await redis.hgetall(k);
+
     result.push({
       key,
       hwid: data.hwid || "UNBOUND",
       banned: data.banned === "true",
-      createdAt: data.createdAt || ""
+      expiresAt: data.expiresAt ? Number(data.expiresAt) : null,
+      createdAt: data.createdAt ? Number(data.createdAt) : null
     });
   }
 
